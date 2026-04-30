@@ -22,7 +22,7 @@ function save() {
     fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
 }
 
-client.on('clientReady', () => {
+client.on('ready', () => {
     console.log(`Connecté en tant que ${client.user.tag}`);
 });
 
