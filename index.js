@@ -2,7 +2,11 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
 const PREFIX = "!";
@@ -10,11 +14,15 @@ let data = {};
 
 try {
     data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
-} catch (err) {
+} catch {
     data = {};
 }
 
-client.on('clientReady', () => {
+function save() {
+    fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
+}
+
+client.on('ready', () => {
     console.log(`Connecté en tant que ${client.user.tag}`);
 });
 
@@ -25,32 +33,54 @@ client.on('messageCreate', message => {
     const args = message.content.slice(PREFIX.length).split(" ");
     const command = args.shift().toLowerCase();
 
+    const user = message.author.username.toLowerCase();
+    const boss = args.join(" ").toLowerCase();
+
+    // ➕ AJOUTER UNE CAPTURE
     if (command === "capture") {
-        const boss = args.join(" ").toLowerCase();
+        if (!boss) return message.reply("Tu dois préciser un boss !");
 
-        if (!boss) {
-            return message.reply("Tu dois préciser un boss !");
-        }
+        if (!data[user]) data[user] = {};
+        if (!data[user][boss]) data[user][boss] = 0;
 
-        if (!data[boss]) data[boss] = 0;
-        data[boss]++;
+        data[user][boss]++;
+        save();
 
-        fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
-
-        message.reply(`Capture ajoutée pour ${boss} ! Total: ${data[boss]}`);
+        return message.reply(`➕ ${boss} ajouté ! Total : ${data[user][boss]}`);
     }
 
+    // ➖ RETIRER UNE CAPTURE
+    if (command === "uncapture") {
+        if (!boss) return message.reply("Tu dois préciser un boss !");
+
+        if (!data[user] || !data[user][boss]) {
+            return message.reply("Tu n'as pas cette capture !");
+        }
+
+        data[user][boss]--;
+
+        if (data[user][boss] <= 0) {
+            delete data[user][boss];
+        }
+
+        save();
+
+        return message.reply(`➖ ${boss} retiré !`);
+    }
+
+    // 📊 VOIR SES CAPTURES
     if (command === "captures") {
-        if (Object.keys(data).length === 0) {
-            return message.reply("Aucune capture.");
+        if (!data[user] || Object.keys(data[user]).length === 0) {
+            return message.reply("Tu n'as aucune capture.");
         }
 
-        let msg = "**Captures :**\n";
-        for (let boss in data) {
-            msg += `- ${boss} : ${data[boss]}\n`;
+        let msg = `**Captures de ${message.author.username} :**\n`;
+
+        for (let boss in data[user]) {
+            msg += `- ${boss} : ${data[user][boss]}\n`;
         }
 
-        message.reply(msg);
+        return message.reply(msg);
     }
 });
 
