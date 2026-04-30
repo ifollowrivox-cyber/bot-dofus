@@ -12,20 +12,24 @@ const client = new Client({
 const PREFIX = "!";
 let data = {};
 
+// 🔄 Chargement des données
 try {
     data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
 } catch {
     data = {};
 }
 
+// 💾 Sauvegarde
 function save() {
     fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
 }
 
+// ✅ Bot prêt
 client.on('ready', () => {
     console.log(`Connecté en tant que ${client.user.tag}`);
 });
 
+// 📩 Messages
 client.on('messageCreate', message => {
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
@@ -36,7 +40,7 @@ client.on('messageCreate', message => {
     const user = message.author.username.toLowerCase();
     const boss = args.join(" ").toLowerCase();
 
-    // ➕ AJOUTER UNE CAPTURE
+    // ➕ ajouter capture
     if (command === "capture") {
         if (!boss) return message.reply("Tu dois préciser un boss !");
 
@@ -49,7 +53,7 @@ client.on('messageCreate', message => {
         return message.reply(`➕ ${boss} ajouté ! Total : ${data[user][boss]}`);
     }
 
-    // ➖ RETIRER UNE CAPTURE
+    // ➖ retirer capture
     if (command === "uncapture") {
         if (!boss) return message.reply("Tu dois préciser un boss !");
 
@@ -68,20 +72,25 @@ client.on('messageCreate', message => {
         return message.reply(`➖ ${boss} retiré !`);
     }
 
-    // 📊 VOIR SES CAPTURES
+    // 📊 captures serveur (TOUT LE MONDE)
     if (command === "captures") {
-        if (!data[user] || Object.keys(data[user]).length === 0) {
-            return message.reply("Tu n'as aucune capture.");
+        if (!data || Object.keys(data).length === 0) {
+            return message.reply("Aucune capture enregistrée.");
         }
 
-        let msg = `**Captures de ${message.author.username} :**\n`;
+        let msg = "**📊 Captures du serveur :**\n";
 
-        for (let boss in data[user]) {
-            msg += `- ${boss} : ${data[user][boss]}\n`;
+        for (let user in data) {
+            msg += `\n👤 **${user}**\n`;
+
+            for (let boss in data[user]) {
+                msg += `- ${boss} : ${data[user][boss]}\n`;
+            }
         }
 
         return message.reply(msg);
     }
 });
 
+// 🔐 login
 client.login(process.env.TOKEN);
